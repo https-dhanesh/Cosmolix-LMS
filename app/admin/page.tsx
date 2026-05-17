@@ -3,86 +3,120 @@ import Tenant from "@/models/Tenant";
 import User from "@/models/User";
 import { School, Users, Activity, BarChart3, TrendingUp } from "lucide-react";
 
+const S = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@500&display=swap');
+:root{--s:#0F172A;--b:#2B5BDB;--bl:#4B79F5;--t:#00C9A7;--m:#64748B;--ml:#94A3B8;--rs:rgba(255,255,255,.12);--bd:#D8DCE8;--g:linear-gradient(135deg,#2B5BDB 0%,#00C9A7 100%);--fd:'Playfair Display',Georgia,serif;--fb:'DM Sans',system-ui,sans-serif;--fm:'DM Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);background:#F4F6FA;-webkit-font-smoothing:antialiased}
+.gt{background:var(--g);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* PAGE */
+.dash{padding:2.5rem 2rem;max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:2.5rem}
+/* HEADER ROW */
+.dh{display:flex;align-items:flex-end;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+.dh-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--b);margin-bottom:8px}
+.dh-title{font-family:var(--fd);font-size:clamp(26px,3.5vw,36px);font-weight:700;color:#111418;line-height:1.1;letter-spacing:-.02em}
+.dh-sub{font-size:13.5px;color:var(--m);margin-top:6px;font-weight:300}
+.live-pill{display:inline-flex;align-items:center;gap:7px;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;padding:7px 14px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.02em;flex-shrink:0}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* STAT CARDS */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5px;background:var(--bd);border:1px solid var(--bd);border-radius:16px;overflow:hidden}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+.sc{background:#fff;padding:2rem 1.75rem;position:relative;overflow:hidden;transition:background-color .2s}
+.sc:hover{background:#F8FAFF}
+.sc::after{content:'';position:absolute;bottom:0;left:1.75rem;right:1.75rem;height:2px;background:var(--g);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+.sc:hover::after{transform:scaleX(1)}
+.sc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem}
+.sc-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ic-blue{background:#EBF0FD;color:#2B5BDB}
+.ic-teal{background:#E0F8F4;color:#0EA88D}
+.ic-slate{background:#F1F5F9;color:#64748B}
+.sc-trend{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ml);text-align:right;line-height:1.4;max-width:80px}
+.sc-label{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--m);margin-bottom:6px}
+.sc-value{font-family:var(--fd);font-size:clamp(36px,4vw,48px);font-weight:700;color:#111418;line-height:1}
+/* EMPTY STATE */
+.empty{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:4rem 2rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1rem}
+.empty-icon{width:64px;height:64px;background:#F8FAFC;border:1px solid var(--bd);border-radius:14px;display:flex;align-items:center;justify-content:center;color:#CBD5E1}
+.empty-title{font-family:var(--fd);font-size:22px;font-weight:700;color:#111418;letter-spacing:-.01em}
+.empty-sub{font-size:13.5px;color:var(--m);max-width:380px;line-height:1.65;font-weight:300}
+.empty-tag{font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ml);border:1px solid var(--bd);padding:4px 10px;border-radius:4px;margin-top:.25rem}
+`;
+
 export default async function AdminDashboard() {
   await connectDB();
   const collegeCount = await Tenant.countDocuments();
-  const studentCount = await User.countDocuments({ role: 'student' });
+  const studentCount = await User.countDocuments({ role: "student" });
 
   return (
-    <div className="space-y-10">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-4xl font-black text-[#0F172A] tracking-tight">Master Overview</h1>
-          <p className="text-slate-500 mt-2 font-medium">Monitoring the pulse of industrial excellence.</p>
-        </div>
-        <div className="flex gap-2">
-          <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-xs font-bold border border-emerald-100 flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            System Live
+    <>
+      <style>{S}</style>
+      <div className="dash">
+
+        {/* ── HEADER ── */}
+        <div className="dh">
+          <div>
+            <p className="dh-eyebrow">Admin · Master Overview</p>
+            <h1 className="dh-title">
+              Platform <span className="gt">Dashboard</span>
+            </h1>
+            <p className="dh-sub">Real-time visibility across all colleges and cohorts.</p>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <StatCard 
-          label="Total Colleges" 
-          value={collegeCount} 
-          icon={<School className="w-6 h-6 text-blue-600" />} 
-          accentColor="bg-blue-600"
-          trend="+2 registered"
-        />
-        <StatCard 
-          label="Active Students" 
-          value={studentCount} 
-          icon={<Users className="w-6 h-6 text-teal-500" />} 
-          accentColor="bg-teal-500"
-          trend="Real-time sync"
-        />
-        <StatCard 
-          label="Sprints Today" 
-          value={0} 
-          icon={<Activity className="w-6 h-6 text-emerald-500" />} 
-          accentColor="bg-emerald-500"
-          trend="No live tests"
-        />
-      </div>
-
-      {/* Analytics Section */}
-      <div className="bg-white border border-slate-200 rounded-[32px] p-12 text-center shadow-sm">
-        <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
-          <BarChart3 className="w-10 h-10 text-slate-300" />
+        {/* ── STAT CARDS ── */}
+        <div className="cards">
+          <StatCard
+            label="Total Colleges"
+            value={collegeCount}
+            icon={<School size={20} />}
+            iconClass="ic-blue"
+            trend={collegeCount === 0 ? "None yet" : `${collegeCount} registered`}
+          />
+          <StatCard
+            label="Active Students"
+            value={studentCount}
+            icon={<Users size={20} />}
+            iconClass="ic-teal"
+            trend={studentCount === 0 ? "None enrolled" : "Live sync"}
+          />
+          <StatCard
+            label="Sprints Today"
+            value={0}
+            icon={<Activity size={20} />}
+            iconClass="ic-slate"
+            trend="No live tests"
+          />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">Analytics Engine Warming Up</h2>
-        <p className="text-slate-500 max-w-md mx-auto mt-2">
-          Detailed behavioral analytics and internship progress charts will appear here as soon as the first college goes live.
-        </p>
+
+        {/* ── ANALYTICS EMPTY STATE ── */}
+        <div className="empty" role="status" aria-label="Analytics not yet available">
+          <div className="empty-icon" aria-hidden="true">
+            <BarChart3 size={28} />
+          </div>
+          <h2 className="empty-title">Analytics Engine Warming Up</h2>
+          <p className="empty-sub">
+            Attendance trends, test score distributions, and sprint performance charts
+            will appear here once the first college and cohort go live.
+          </p>
+          <span className="empty-tag" aria-hidden="true">Awaiting first college onboarding</span>
+        </div>
+
       </div>
-    </div>
+    </>
   );
 }
 
-function StatCard({ label, value, icon, accentColor, trend }: { label: string; value: number; icon: React.ReactNode; accentColor: string; trend: string }) {
+function StatCard({ label, value, icon, iconClass, trend }: {
+  label: string; value: number; icon: React.ReactNode; iconClass: string; trend: string;
+}) {
   return (
-    <div className="p-8 bg-white border border-slate-200 rounded-[24px] hover:shadow-xl hover:shadow-slate-200/50 transition-all relative overflow-hidden group">
-      {/* Subtle top-accent bar */}
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor} opacity-20`} />
-      
-      <div className="flex justify-between items-start mb-6">
-        <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-white group-hover:shadow-md transition-all">
-          {icon}
-        </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-1">
-          {trend}
-        </span>
+    <div className="sc">
+      <div className="sc-top">
+        <div className={`sc-icon ${iconClass}`} aria-hidden="true">{icon}</div>
+        <span className="sc-trend">{trend}</span>
       </div>
-      
-      <div>
-        <p className="text-sm font-bold text-slate-400 uppercase tracking-tight">{label}</p>
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-5xl font-black text-slate-900 mt-1">{value}</h2>
-          <TrendingUp className="w-5 h-5 text-emerald-500" />
-        </div>
-      </div>
+      <p className="sc-label">{label}</p>
+      <p className="sc-value">{value}</p>
     </div>
   );
 }
