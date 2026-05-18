@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SidebarLink href="/admin" icon={<LayoutDashboard size={20} />} label="Master Overview" />
           <SidebarLink href="/admin/colleges" icon={<School size={20} />} label="Manage Colleges" />
           <SidebarLink href="/admin/students" icon={<Users size={20} />} label="Students" />
+          <SidebarLink href="/admin/teachers" icon={<Users size={20} />} label="Teachers" />
           <SidebarLink href="/admin/sessions" icon={<Activity size={20} />} label="Live Sessions" />
         </nav>
 

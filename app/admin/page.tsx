@@ -1,7 +1,8 @@
 import { connectDB } from "@/lib/db";
 import Tenant from "@/models/Tenant";
 import User from "@/models/User";
-import { School, Users, Activity, BarChart3, TrendingUp } from "lucide-react";
+// 1. Added Briefcase to the lucide-react imports
+import { School, Users, Activity, BarChart3, Briefcase } from "lucide-react";
 
 const S = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@500&display=swap');
@@ -20,8 +21,10 @@ body{font-family:var(--fb);background:#F4F6FA;-webkit-font-smoothing:antialiased
 .live-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* STAT CARDS */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5px;background:var(--bd);border:1px solid var(--bd);border-radius:16px;overflow:hidden}
-@media(max-width:760px){.cards{grid-template-columns:1fr}}
+/* 2. Updated grid-template-columns to 4 to fit the new card perfectly */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5px;background:var(--bd);border:1px solid var(--bd);border-radius:16px;overflow:hidden}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.cards{grid-template-columns:1fr}}
 .sc{background:#fff;padding:2rem 1.75rem;position:relative;overflow:hidden;transition:background-color .2s}
 .sc:hover{background:#F8FAFF}
 .sc::after{content:'';position:absolute;bottom:0;left:1.75rem;right:1.75rem;height:2px;background:var(--g);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
@@ -44,8 +47,12 @@ body{font-family:var(--fb);background:#F4F6FA;-webkit-font-smoothing:antialiased
 
 export default async function AdminDashboard() {
   await connectDB();
-  const collegeCount = await Tenant.countDocuments();
-  const studentCount = await User.countDocuments({ role: "student" });
+  
+  // Only count entities that are NOT deleted
+  const collegeCount = await Tenant.countDocuments({ isDeleted: false });
+  const studentCount = await User.countDocuments({ role: "student", isDeleted: false });
+  // 3. New DB query to fetch the teacher count
+  const teacherCount = await User.countDocuments({ role: "teacher", isDeleted: false });
 
   return (
     <>
@@ -79,6 +86,14 @@ export default async function AdminDashboard() {
             iconClass="ic-teal"
             trend={studentCount === 0 ? "None enrolled" : "Live sync"}
           />
+          {/* 4. The new Teacher Stat Card */}
+          <StatCard
+            label="Active Faculty"
+            value={teacherCount}
+            icon={<Briefcase size={20} />}
+            iconClass="ic-blue"
+            trend={teacherCount === 0 ? "None enrolled" : "Live sync"}
+          />
           <StatCard
             label="Sprints Today"
             value={0}
@@ -86,6 +101,7 @@ export default async function AdminDashboard() {
             iconClass="ic-slate"
             trend="No live tests"
           />
+          
         </div>
 
         {/* ── ANALYTICS EMPTY STATE ── */}
