@@ -5,6 +5,7 @@ declare global {
     metadata: {
       role?: 'cosmolix_admin' | 'teacher' | 'student';
       tenantId?: string;
+      domain?: string;
     }
   }
 }

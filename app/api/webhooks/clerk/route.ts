@@ -1,8 +1,10 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { WebhookEvent } from '@clerk/nextjs/server';
+import { WebhookEvent, createClerkClient } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
+
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -11,7 +13,6 @@ export async function POST(req: Request) {
     throw new Error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env.local');
   }
 
-  // Next.js 16: headers() is async
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
@@ -34,23 +35,57 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as WebhookEvent;
   } catch (err) {
+    console.error('Webhook verification failed:', err);
     return new Response('Error occured', { status: 400 });
   }
 
-  const { id } = evt.data;
   const eventType = evt.type;
 
-  if (eventType === 'user.created') {
+  // 2. Handle Creation and Updates
+  if (eventType === 'user.created' || eventType === 'user.updated') {
     await connectDB();
-    const { first_name, last_name, email_addresses } = evt.data;
-    
-    await User.create({
-      clerkId: id,
-      name: `${first_name} ${last_name}`,
-      email: email_addresses[0].email_address,
-      role: 'student',
-    });
+    const { id, first_name, last_name, email_addresses, public_metadata } = evt.data;
+
+    const role = (public_metadata?.role as string) || 'student';
+    const tenantId = (public_metadata?.tenantId as string) || null;
+    const domain = (public_metadata?.domain as string) || null;
+
+    // Sync to MongoDB
+    await User.findOneAndUpdate(
+      { clerkId: id },
+      {
+        clerkId: id,
+        name: `${first_name} ${last_name}`,
+        email: email_addresses[0].email_address,
+        role: role,
+        tenantId: tenantId, 
+        domain: domain,    
+        isActive: true,
+        isDeleted: false
+      },
+      { upsert: true, new: true }
+    );
+
+    // 3. Metadata Re-Sync
+    // If Clerk is missing any of the 3 pillars, we re-push them.
+    // Notice: No parentheses () after clerkClient here.
+    if (!public_metadata?.role || !public_metadata?.tenantId) {
+      await clerkClient.users.updateUserMetadata(id, {
+        publicMetadata: {
+          role: role,
+          tenantId: tenantId,
+          domain: domain
+        }
+      });
+    }
   }
 
-  return new Response('', { status: 200 });
+  // 4. Handle Deletion
+  if (eventType === 'user.deleted') {
+    await connectDB();
+    // Use the ID from evt.data.id directly
+    await User.findOneAndDelete({ clerkId: evt.data.id });
+  }
+
+  return new Response('Sync Success', { status: 200 });
 }

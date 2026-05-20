@@ -16,23 +16,23 @@ const isStudentRoute = createRouteMatcher(['/student(.*)']);
 export default clerkMiddleware(async (auth, request) => {
   const { userId, sessionClaims } = await auth();
   const role = sessionClaims?.metadata?.role;
-  
-  console.log("Current User Role:", role);
 
   if (!userId && !isPublicRoute(request)) {
     return (await auth()).redirectToSignIn();
   }
 
   if (isAdminRoute(request) && role !== 'cosmolix_admin') {
-    return NextResponse.redirect(new URL('/', request.url));
+    const fallback = role === 'teacher' ? '/teacher' : '/student';
+    return NextResponse.redirect(new URL(fallback, request.url));
   }
 
   if (isTeacherRoute(request) && role !== 'teacher' && role !== 'cosmolix_admin') {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/student', request.url));
   }
 
   if (isStudentRoute(request) && role !== 'student' && role !== 'cosmolix_admin') {
-    return NextResponse.redirect(new URL('/', request.url));
+    const fallback = role === 'teacher' ? '/teacher' : '/';
+    return NextResponse.redirect(new URL(fallback, request.url));
   }
 
   return NextResponse.next();

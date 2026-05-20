@@ -6,6 +6,7 @@ export interface ITenant extends Document {
   contactEmail: string;
   domains: string[];
   isActive: boolean;
+  isDeleted:boolean;
 }
 
 const TenantSchema = new Schema<ITenant>({
@@ -14,6 +15,7 @@ const TenantSchema = new Schema<ITenant>({
   contactEmail: { type: String },
   domains: { type: [String], default: [] },
   isActive: { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export default mongoose.models.Tenant || mongoose.model<ITenant>('Tenant', TenantSchema);

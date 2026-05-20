@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+import { SignInButton, UserButton } from "@clerk/nextjs";
 import { ArrowRight, ClipboardList, LayoutDashboard, Users, CalendarCheck, Trophy, Medal } from "lucide-react";
 
 const S = `
@@ -95,11 +96,11 @@ body{font-family:var(--fb);background:#F4F6FA;color:#1E293B;-webkit-font-smoothi
 .ftag{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--m);border:1px solid var(--rs);padding:4px 10px;border-radius:4px}
 `;
 
-const PILLARS = ["Smart Attendance Tracking","Automated Test Evaluation","Assignment Management","Live Leaderboards","Progress Analytics"] as const;
+const PILLARS = ["Real-time Session Verification", "Automated Performance Matrix", "Milestone Tracking", "Live Analytics Engine", "Granular Operational Controls"] as const;
 const CARDS = [
-  { n:"01", ic:"fib", Icon:ClipboardList, t:"Tests & Assessments",    d:"Schedule, auto-grade, and publish results for weekly tests with instant score reports and performance breakdowns per student." },
-  { n:"02", ic:"fit", Icon:Users,          t:"Student Tracking",        d:"Monitor attendance, assignment submissions, and academic progress across every cohort from a single unified dashboard." },
-  { n:"03", ic:"fie", Icon:CalendarCheck,  t:"Assignments & Sprints",   d:"Create timed assignments, sprint challenges, and project submissions with deadline enforcement built in." },
+  { n:"01", ic:"fib", Icon:ClipboardList, t:"Evaluations & Tasks",    d:"Distribute milestones, manage code reviews, and capture structural output parameters across distinct operational domain paths." },
+  { n:"02", ic:"fit", Icon:Users,          t:"Performance Tracking",    d:"Track member participation metrics, check-in histories, and task execution workflows from a centralized interface." },
+  { n:"03", ic:"fie", Icon:CalendarCheck,  t:"Deadlines & Sprints",     d:"Configure dynamic timelines, session windows, and critical deployment sprints with strict compliance engines built-in." },
 ] as const;
 
 const LB = [
@@ -111,7 +112,16 @@ const LB = [
 ] as const;
 
 export default async function Home() {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
+  const role = sessionClaims?.metadata?.role;
+
+  // SMART REDIRECT LOGIC
+  if (userId) {
+    if (role === "cosmolix_admin") redirect("/admin");
+    if (role === "teacher") redirect("/teacher");
+    if (role === "student") redirect("/student");
+  }
+
   return (
     <>
       <style>{S}</style>
@@ -121,20 +131,29 @@ export default async function Home() {
           <div className="navi">
             <div className="brand">
               <div className="logo">
-                <Image src="/logo.jpg" alt="Cosmolix LMS" width={36} height={36} priority style={{ objectFit:"contain", borderRadius:6 }} />
+                <Image src="/logo.jpg" alt="Cosmolix Hub" width={36} height={36} priority style={{ objectFit:"contain", borderRadius:6 }} />
               </div>
               <div className="divd" aria-hidden="true" />
               <span className="btext">COSMOLIX <span className="gt">LMS</span></span>
             </div>
             <nav className="acts" aria-label="Account">
               {!userId ? (
-                <>
-                  <SignInButton mode="modal"><button className="gh" type="button">Sign In</button></SignInButton>
-                  <SignUpButton mode="modal"><button className="gp" type="button">Get Started</button></SignUpButton>
-                </>
+                /* INLINE FOOTER OVERRIDE RULES INJECTED INTO TARGET MODAL ELEMENT BUTTON */
+                <SignInButton 
+                  mode="modal"
+                  appearance={{
+                    elements: {
+                      footer: "hidden"
+                    }
+                  }}
+                >
+                  <button className="gp" type="button">Sign In</button>
+                </SignInButton>
               ) : (
                 <>
-                  <Link href="/admin" className="gh"><LayoutDashboard width={15} height={15} aria-hidden="true" />Dashboard</Link>
+                  <Link href={`/${role || 'student'}`} className="gh">
+                    <LayoutDashboard width={15} height={15} aria-hidden="true" /> Workspace
+                  </Link>
                   <UserButton appearance={{ elements: { userButtonAvatarBox:"w-9 h-9" } }} />
                 </>
               )}
@@ -150,33 +169,42 @@ export default async function Home() {
             <div className="gr"    aria-hidden="true" />
             <div className="hi">
               <div>
-                <p className="eb"><span className="ebd" />Academic Management Platform</p>
+                <p className="eb"><span className="ebd" />Enterprise Workspace Tracking</p>
                 <h1 className="h1" id="hh">
-                  One Platform for<br />
-                  <span className="gt" style={{ fontStyle:"italic" }}>Every Classroom.</span>
+                  One Hub for All<br />
+                  <span className="gt" style={{ fontStyle:"italic" }}>Core Metrics.</span>
                 </h1>
                 <p className="sub">
-                  Tests, attendance, assignments, and student progress — all tracked, evaluated,
-                  and reported automatically across every department and cohort.
+                  Verify presence, evaluate outputs, align sprint timelines, and monitor core 
+                  progress maps across synchronized skill domains.
                 </p>
                 <div className="ctas">
                   {!userId ? (
-                    <SignUpButton mode="modal">
-                      <button className="cp" type="button">Get Started <ArrowRight width={16} height={16} aria-hidden="true" /></button>
-                    </SignUpButton>
+                    /* HERO CALL-TO-ACTION BUTTON OVERRIDE STRUCTURE */
+                    <SignInButton 
+                      mode="modal"
+                      appearance={{
+                        elements: {
+                          footer: "hidden"
+                        }
+                      }}
+                    >
+                      <button className="cp" type="button">Sign In to Workspace <ArrowRight width={16} height={16} aria-hidden="true" /></button>
+                    </SignInButton>
                   ) : (
-                    <Link href="/admin" className="cp">Enter Workspace <ArrowRight width={16} height={16} aria-hidden="true" /></Link>
+                    <Link href={`/${role || 'student'}`} className="cp">
+                      Enter Workspace <ArrowRight width={16} height={16} aria-hidden="true" />
+                    </Link>
                   )}
-                  <span className="cs">Live leaderboards &amp; auto-grading included</span>
+                  <span className="cs">Real-time status monitoring &amp; verification analytics</span>
                 </div>
               </div>
 
-              {/* Leaderboard preview widget */}
-              <aside className="aside" aria-label="Sample leaderboard">
+              <aside className="aside" aria-label="Performance preview">
                 <div className="lb-head">
                   <span className="lb-title">
                     <Trophy size={12} style={{ display:"inline", marginRight:5, verticalAlign:"middle", color:"#F59E0B" }} aria-hidden="true" />
-                    Sprint Leaderboard
+                    Active Sprint Velocity
                   </span>
                   <span className="lb-badge">Preview</span>
                 </div>
@@ -198,7 +226,7 @@ export default async function Home() {
                   </div>
                 ))}
                 <div className="lb-footer">
-                  <span className="lb-footer-text">Live rankings update after every sprint</span>
+                  <span className="lb-footer-text">Rankings update dynamically based on metrics</span>
                 </div>
               </aside>
             </div>
@@ -206,7 +234,7 @@ export default async function Home() {
 
           <div className="tb">
             <div className="tbi">
-              <span className="tbl" aria-hidden="true">Core modules</span>
+              <span className="tbl" aria-hidden="true">Core Platform Engine</span>
               <div className="tbis">{PILLARS.map(p => <span key={p} className="tbit">{p}</span>)}</div>
             </div>
           </div>
@@ -215,9 +243,9 @@ export default async function Home() {
             <div className="sh">
               <div>
                 <p className="sl2" aria-hidden="true">Platform Capabilities</p>
-                <h2 className="st" id="fh">Built for educators.<br /><em>Loved by students.</em></h2>
+                <h2 className="st" id="fh">Engineered for control.<br /><em>Optimized for growth.</em></h2>
               </div>
-              <p className="ss">Every tool your institution needs to run a rigorous, data-driven academic programme.</p>
+              <p className="ss">Every architectural layer needed to deploy, verify, and monitor team milestone structures.</p>
             </div>
             <div className="fg">
               {CARDS.map(({ n, ic, Icon, t, d }) => (
