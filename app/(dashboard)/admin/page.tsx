@@ -1,9 +1,12 @@
 import { connectDB } from "@/lib/db";
 import Tenant from "@/models/Tenant";
 import User from "@/models/User";
-import Session from "@/models/Session"; // Added
-import Assignment from "@/models/Assignment"; // Added
-import { School, Users, Activity, BarChart3, Briefcase, FileText } from "lucide-react";
+import Session from "@/models/Session"; 
+import Assignment from "@/models/Assignment"; 
+import { School, Users, Activity, BarChart3, FileText } from "lucide-react";
+
+// 💡 CRITICAL PRODUCTION FIX: Forces dynamic server execution and bypasses Vercel compilation build caches
+export const dynamic = "force-dynamic";
 
 const STYLES = `
   #admin-dash-root {
@@ -24,12 +27,12 @@ const STYLES = `
 export default async function AdminDashboard() {
   await connectDB();
   
-  // Real-time counts using counts from all models
+  // Real-time metrics counts pulling directly from multi-model data states
   const [collegeCount, studentCount, teacherCount, sessionCount, assignmentCount] = await Promise.all([
     Tenant.countDocuments({ isDeleted: { $ne: true } }),
     User.countDocuments({ role: "student", isDeleted: { $ne: true } }),
     User.countDocuments({ role: "teacher", isDeleted: { $ne: true } }),
-    Session.countDocuments({ status: { $ne: 'completed' } }), // Only active sessions
+    Session.countDocuments({ status: { $ne: 'completed' } }), 
     Assignment.countDocuments({ isActive: true })
   ]);
 
@@ -66,7 +69,7 @@ export default async function AdminDashboard() {
             value={studentCount}
             icon={<Users size={22} />}
             iconClass="bg-teal-50 text-teal-600"
-            trend="Active Cohorts"
+            trend={`${studentCount} Enrolled`}
           />
           <StatCard
             label="Active Sessions"
@@ -101,14 +104,13 @@ export default async function AdminDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Quick Actions or mini-tables could go here as the engine warms up */}
-            <div className="p-8 bg-white border border-slate-200 rounded-3xl">
+            <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
                <h3 className="text-lg font-bold text-slate-900 mb-1">Activity Detected</h3>
-               <p className="text-sm text-slate-500 mb-6">The platform is now processing data from {sessionCount} active sessions.</p>
+               <p className="text-sm text-slate-500 mb-6">The platform is now processing live data across synchronized clusters.</p>
                <div className="space-y-4">
                   <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-sm text-slate-700 font-medium">Tracking {studentCount} students across domains...</span>
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-sm text-slate-700 font-medium">Tracking {studentCount} students across active training paths.</span>
                   </div>
                </div>
             </div>
