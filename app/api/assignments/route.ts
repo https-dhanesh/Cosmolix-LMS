@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Assignment from "@/models/Assignment";
-import User from "@/models/User"; // Add this import
+import User from "@/models/User";
 
 export async function POST(req: Request) {
   try {
