@@ -43,6 +43,7 @@ export default function CreateSession() {
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-500 uppercase">Target Domain</label>
           <select name="domain" required className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="GLOBAL_COMMON">Common to All (Global)</option>
             <option value="Full Stack Web Development">Full Stack Web Development</option>
             <option value="Machine Learning & AI">Machine Learning & AI</option>
             <option value="Cybersecurity & Ethical Hacking">Cybersecurity & Ethical Hacking</option>

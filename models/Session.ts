@@ -14,7 +14,7 @@ export interface ISession extends Document {
 
 const SessionSchema = new Schema<ISession>({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: false },
-  domain: { type: String, required: true },
+  domain: { type: String, required: false, default: null },
   title: { type: String, required: true },
   description: { type: String },
   scheduledAt: { type: Date, required: true },

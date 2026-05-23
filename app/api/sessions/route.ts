@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Session from "@/models/Session";
 import User from "@/models/User";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   try {
@@ -21,18 +22,18 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    
-    // MAPPING: We take 'topic' from the form and save it as 'title' for the Model
     const { tenantId, domain, topic, description, scheduledAt, meetLink } = body;
 
     if (!domain || !topic || !scheduledAt || !meetLink) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    const domainValue = domain === "GLOBAL_COMMON" ? null : domain;
+
     const newSession = await Session.create({
-      tenantId: tenantId || null, // Optional: if null, it's a global session
-      domain,
-      title: topic, // Handshake with the form 'topic' field
+      tenantId: tenantId || null, 
+      domain: domainValue,
+      title: topic, 
       description,
       scheduledAt: new Date(scheduledAt),
       meetLink,
@@ -40,7 +41,11 @@ export async function POST(req: Request) {
       status: 'scheduled'
     });
 
-    return NextResponse.json(newSession, { status: 201 });
+    revalidatePath("/admin/sessions");
+    revalidatePath("/admin");
+    revalidatePath("/student");
+
+    return NextResponse.json(JSON.parse(JSON.stringify(newSession)), { status: 201 });
 
   } catch (error: any) {
     console.error("Session Creation Error:", error);
@@ -56,12 +61,18 @@ export async function GET(req: Request) {
     const tenantId = searchParams.get('tenantId'); 
     
     let query: any = {};
-    if (domain) query.domain = domain;
-    if (tenantId) query.tenantId = tenantId;
 
-    const sessions = await Session.find(query).sort({ scheduledAt: -1 });
+    if (domain) {
+      query.domain = domain === "GLOBAL_COMMON" ? null : { $in: [domain, null] };
+    }
     
-    return NextResponse.json(sessions);
+    if (tenantId) {
+      query.tenantId = { $in: [tenantId, null] };
+    }
+
+    const sessions = await Session.find(query).sort({ scheduledAt: -1 }).lean();
+    
+    return NextResponse.json(JSON.parse(JSON.stringify(sessions)));
   } catch (error) {
     return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
   }

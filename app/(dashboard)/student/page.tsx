@@ -10,9 +10,22 @@ import AssignmentList from "@/app/components/dashboard/AssignmentList";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
 import { LayoutDashboard, Clock, LogOut, GraduationCap } from "lucide-react";
 
+// 💡 CRITICAL PRODUCTION FIX: Forces dynamic server execution so updates show up live
+export const dynamic = "force-dynamic";
+
+// Helper function to calculate attendance percentage
 async function getAttendanceRate(studentId: string, domain: string) {
-  const totalSessions = await Session.countDocuments({ domain: domain, status: "completed" });
+  // 💡 GLOBAL FIX: Count both domain-specific AND common/global completed sessions
+  const totalSessions = await Session.countDocuments({ 
+    status: "completed",
+    $or: [
+      { domain: domain },
+      { domain: null } // Include global items in the total expected baseline
+    ]
+  });
+
   if (totalSessions === 0) return 0;
+  
   const attendedSessions = await Attendance.countDocuments({ studentId: studentId });
   return Math.min(100, Math.round((attendedSessions / totalSessions) * 100));
 }
@@ -33,13 +46,31 @@ export default async function StudentDashboard() {
     );
   }
 
+  // 💡 GLOBAL FALLBACK FIX: Using $or logic to pull track-specific items OR global ones
   const sessions = await Session.find({
-    domain: domain,
     status: { $ne: 'completed' },
-    $or: [{ tenantId: student.tenantId }, { tenantId: null }]
+    $or: [
+      { domain: domain }, 
+      { domain: null } // 👈 Shows "Common to All" general tracks
+    ],
+    $and: [
+      {
+        $or: [
+          { tenantId: student.tenantId },
+          { tenantId: null }
+        ]
+      }
+    ]
   }).sort({ scheduledAt: 1 }).lean();
 
-  const assignments = await Assignment.find({ domain: domain }).sort({ dueDate: 1 }).lean();
+  // 💡 GLOBAL FALLBACK FIX: Fetch assignments assigned to their track OR everyone
+  const assignments = await Assignment.find({ 
+    $or: [
+      { domain: domain },
+      { domain: null } // 👈 Shows "Common to All" general tasks
+    ]
+  }).sort({ dueDate: 1 }).lean();
+
   const submissions = await Submission.find({ studentId: student._id }).select('assignmentId').lean();
   const attendanceRate = await getAttendanceRate(student._id.toString(), domain);
 

@@ -12,7 +12,7 @@ export interface IAssignment extends Document {
 const AssignmentSchema = new Schema<IAssignment>({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  domain: { type: String, required: true },
+  domain: { type: String, required: false, default: null },
   dueDate: { type: Date, required: true },
   attachmentUrl: { type: String },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }

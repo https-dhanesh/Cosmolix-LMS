@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Assignment from "@/models/Assignment";
 import User from "@/models/User";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   try {
@@ -22,24 +23,27 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    // 1. Find the Mongo User so we have their _id
     const mongoUser = await User.findOne({ clerkId: userId });
     
     if (!mongoUser) {
       return NextResponse.json({ error: "Admin user not found in database" }, { status: 404 });
     }
 
-    // 2. Pass mongoUser._id to 'createdBy'
+    const domainValue = domain === "GLOBAL_COMMON" ? null : domain;
+
     const newAssignment = await Assignment.create({
       title,
       description,
-      domain,
+      domain: domainValue, 
       dueDate: new Date(dueDate),
-      createdBy: mongoUser._id, // THIS IS THE FIX
+      createdBy: mongoUser._id, 
       isActive: true
     });
 
-    return NextResponse.json(newAssignment, { status: 201 });
+    revalidatePath("/admin/assignments");
+    revalidatePath("/student");
+
+    return NextResponse.json(JSON.parse(JSON.stringify(newAssignment)), { status: 201 });
 
   } catch (error) {
     console.error("Assignment Creation Error:", error);

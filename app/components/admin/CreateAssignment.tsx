@@ -83,6 +83,7 @@ export default function CreateAssignment() {
             required 
             className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
           >
+            <option value="GLOBAL_COMMON">Common to All (Global)</option>
             <option value="Full Stack Web Development">Full Stack Web Development</option>
             <option value="Machine Learning & AI">Machine Learning & AI</option>
             <option value="Cybersecurity & Ethical Hacking">Cybersecurity & Ethical Hacking</option>
