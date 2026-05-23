@@ -10,17 +10,14 @@ import AssignmentList from "@/app/components/dashboard/AssignmentList";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
 import { LayoutDashboard, Clock, LogOut, GraduationCap } from "lucide-react";
 
-// 💡 CRITICAL PRODUCTION FIX: Forces dynamic server execution so updates show up live
 export const dynamic = "force-dynamic";
 
-// Helper function to calculate attendance percentage
 async function getAttendanceRate(studentId: string, domain: string) {
-  // 💡 GLOBAL FIX: Count both domain-specific AND common/global completed sessions
   const totalSessions = await Session.countDocuments({ 
     status: "completed",
     $or: [
       { domain: domain },
-      { domain: null } // Include global items in the total expected baseline
+      { domain: null }
     ]
   });
 
@@ -46,12 +43,11 @@ export default async function StudentDashboard() {
     );
   }
 
-  // 💡 GLOBAL FALLBACK FIX: Using $or logic to pull track-specific items OR global ones
-  const sessions = await Session.find({
+  const rawSessions = await Session.find({
     status: { $ne: 'completed' },
     $or: [
       { domain: domain }, 
-      { domain: null } // 👈 Shows "Common to All" general tracks
+      { domain: null }
     ],
     $and: [
       {
@@ -63,11 +59,21 @@ export default async function StudentDashboard() {
     ]
   }).sort({ scheduledAt: 1 }).lean();
 
-  // 💡 GLOBAL FALLBACK FIX: Fetch assignments assigned to their track OR everyone
+  // 💡 TIME ENGINE FIX: Calculate if the current time has bypassed the session start window
+  const now = new Date();
+  const sessions = rawSessions.map((session: any) => {
+    const sessionTime = new Date(session.scheduledAt);
+    return {
+      ...session,
+      // Forces true if status is manually set to live OR if the current time has crossed the scheduled timestamp
+      isLive: session.status === 'live' || now >= sessionTime
+    };
+  });
+
   const assignments = await Assignment.find({ 
     $or: [
       { domain: domain },
-      { domain: null } // 👈 Shows "Common to All" general tasks
+      { domain: null }
     ]
   }).sort({ dueDate: 1 }).lean();
 
@@ -77,7 +83,6 @@ export default async function StudentDashboard() {
   return (
     <div className="min-h-screen bg-[#F4F6FA] pb-12">
       
-      {/* GLOBAL DASHBOARD TOP NAVIGATION BAR */}
       <header className="sticky top-0 z-50 bg-[#0F172A] border-b border-white/10 backdrop-blur-md px-8 py-4 mb-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -100,10 +105,8 @@ export default async function StudentDashboard() {
         </div>
       </header>
 
-      {/* MAIN LAYOUT BODY HUB CONTAINER */}
       <main className="p-4 md:p-8 max-w-7xl mx-auto space-y-10">
         
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200/60 shadow-sm">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight font-serif">Welcome Back, {student.name || "Student"}</h1>
@@ -123,9 +126,7 @@ export default async function StudentDashboard() {
           </div>
         </div>
 
-        {/* Dashboard Operational Grid columns layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Left Column: Learning Schedule */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
@@ -137,7 +138,11 @@ export default async function StudentDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {sessions.length > 0 ? (
                 sessions.map((session: any) => (
-                  <SessionCard key={session._id.toString()} session={JSON.parse(JSON.stringify(session))} />
+                  <SessionCard 
+                    key={session._id.toString()} 
+                    // 💡 Pass down the sanitized serialization object along with our runtime status calculation
+                    session={JSON.parse(JSON.stringify(session))} 
+                  />
                 ))
               ) : (
                 <div className="col-span-full p-16 text-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-white">
@@ -147,7 +152,6 @@ export default async function StudentDashboard() {
             </div>
           </div>
 
-          {/* Right Column: Assignment Track */}
           <div className="bg-slate-50/40 p-1 rounded-[2.5rem] border border-slate-100 h-fit">
             <div className="bg-white p-6 rounded-[2.3rem] shadow-sm">
               <AssignmentList assignments={JSON.parse(JSON.stringify(assignments))} submissions={JSON.parse(JSON.stringify(submissions))} />
