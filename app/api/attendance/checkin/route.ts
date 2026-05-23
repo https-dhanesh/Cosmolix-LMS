@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import Attendance from "@/models/Attendance";
 import Session from "@/models/Session";
 import User from "@/models/User";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   try {
@@ -28,13 +29,14 @@ export async function POST(req: Request) {
 
     const now = new Date();
     const sessionTime = new Date(session.scheduledAt);
-    const diff = (sessionTime.getTime() - now.getTime()) / 60000;
+    
+    const diffInMilliseconds = sessionTime.getTime() - now.getTime();
+    const diffInMinutes = diffInMilliseconds / 60000;
 
-    if (diff > 10 && session.status !== 'live') {
+    if (diffInMinutes > 10 && session.status !== 'live') {
       return NextResponse.json({ error: "Too early to join" }, { status: 400 });
     }
 
-    // CHECK IF ALREADY LOGGED: Clean re-entry loop optimization
     const existingAttendance = await Attendance.findOne({
       sessionId,
       studentId: student._id
@@ -48,7 +50,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Create a new fresh attendance record
     await Attendance.create({
       sessionId,
       studentId: student._id,
@@ -56,6 +57,9 @@ export async function POST(req: Request) {
       ipAddress: ip,
       checkedInTime: now
     });
+
+    revalidatePath("/student");
+    revalidatePath("/admin");
 
     return NextResponse.json({ success: true, meetLink: session.meetLink }, { status: 201 });
 

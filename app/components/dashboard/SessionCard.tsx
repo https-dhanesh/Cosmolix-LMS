@@ -1,6 +1,8 @@
 "use client";
 
-import { Video, Calendar, Clock, ExternalLink, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Video, Calendar, Clock, ExternalLink, ShieldAlert, Loader2 } from "lucide-react";
 
 interface SessionCardProps {
   session: {
@@ -35,7 +37,36 @@ const formatStableTime = (dateInput: string | Date) => {
 };
 
 export default function SessionCard({ session }: SessionCardProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const canJoin = session.isLive;
+
+  const handleJoinSession = async () => {
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session._id }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.meetLink) {
+        window.open(data.meetLink, "_blank", "noopener,noreferrer");
+        router.refresh();
+      } else {
+        alert(data.error || "Could not log attendance entry.");
+      }
+    } catch (err) {
+      console.error("Tracking connection failed", err);
+      alert("Network error. Failed to log attendance.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
@@ -88,15 +119,23 @@ export default function SessionCard({ session }: SessionCardProps) {
             Locked until start
           </div>
         ) : (
-          <a
-            href={session.meetLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl transition-all shadow-sm shadow-blue-100 hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0"
+          <button
+            onClick={handleJoinSession}
+            disabled={loading}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl transition-all shadow-sm shadow-blue-100 hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Join Live Meeting
-            <ExternalLink size={13} />
-          </a>
+            {loading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                Logging Attendance...
+              </>
+            ) : (
+              <>
+                Join Live Meeting
+                <ExternalLink size={13} />
+              </>
+            )}
+          </button>
         )}
       </div>
 
