@@ -46,7 +46,7 @@ export default function SessionCard({ session }: SessionCardProps) {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/attendance", {
+      const res = await fetch("/api/attendance/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId: session._id }),
