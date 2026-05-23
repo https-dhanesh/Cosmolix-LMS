@@ -30,12 +30,16 @@ export async function POST(req: Request) {
 
     const domainValue = domain === "GLOBAL_COMMON" ? null : domain;
 
+    const localizedDate = scheduledAt.includes("Z") || scheduledAt.includes("+") 
+      ? new Date(scheduledAt) 
+      : new Date(`${scheduledAt}:00+05:30`);
+
     const newSession = await Session.create({
       tenantId: tenantId || null, 
       domain: domainValue,
       title: topic, 
       description,
-      scheduledAt: new Date(scheduledAt),
+      scheduledAt: localizedDate,
       meetLink,
       createdBy: mongoUser._id,
       status: 'scheduled'

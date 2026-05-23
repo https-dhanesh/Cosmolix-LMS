@@ -16,15 +16,22 @@ interface SessionCardProps {
 
 const formatStableDate = (dateInput: string | Date) => {
   const d = new Date(dateInput);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata'
+  });
 };
 
 const formatStableTime = (dateInput: string | Date) => {
   const d = new Date(dateInput);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('en-IN', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata' 
+  });
 };
 
 export default function SessionCard({ session }: SessionCardProps) {
@@ -33,11 +40,9 @@ export default function SessionCard({ session }: SessionCardProps) {
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
       
-      {/* Visual Status Indicator Strip */}
       <div className={`absolute top-0 left-0 right-0 h-1 ${canJoin ? 'bg-emerald-500 animate-pulse' : 'bg-slate-200'}`} />
 
       <div className="space-y-4">
-        {/* Top Badges & Icon row */}
         <div className="flex items-start justify-between gap-2">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${canJoin ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
             <Video size={20} />
@@ -55,7 +60,6 @@ export default function SessionCard({ session }: SessionCardProps) {
           </div>
         </div>
 
-        {/* Text Details Area */}
         <div>
           <h3 className="font-bold text-slate-900 text-base line-clamp-1 group-hover:text-blue-600 transition-colors">
             {session.title}
@@ -65,7 +69,6 @@ export default function SessionCard({ session }: SessionCardProps) {
           </p>
         </div>
 
-        {/* Date and Time Details Block */}
         <div className="flex items-center gap-4 text-xs text-slate-500 pt-1 border-t border-slate-50">
           <span className="flex items-center gap-1 font-medium">
             <Calendar size={13} className="text-slate-400" /> 
@@ -78,7 +81,6 @@ export default function SessionCard({ session }: SessionCardProps) {
         </div>
       </div>
 
-      {/* Conditional Action Button Group */}
       <div className="mt-5 pt-3 border-t border-slate-100">
         {!canJoin ? (
           <div className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl text-slate-400 bg-slate-50 border border-slate-200/60 cursor-not-allowed">

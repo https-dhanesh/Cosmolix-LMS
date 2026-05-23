@@ -4,26 +4,31 @@ import CreateSession from "@/app/components/admin/CreateSession";
 import EndSessionButton from "@/app/components/admin/EndSessionButton";
 import { Video, Calendar, Clock, ExternalLink, CheckCircle } from "lucide-react";
 
-// 💡 CRITICAL PRODUCTION FIX: Stops Next.js static compilation caching and forces live DB evaluation
 export const dynamic = "force-dynamic";
 
 const formatStableDate = (dateInput: string | Date) => {
   const d = new Date(dateInput);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata'
+  });
 };
 
 const formatStableTime = (dateInput: string | Date) => {
   const d = new Date(dateInput);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('en-IN', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata' 
+  });
 };
 
 export default async function AdminSessionsPage() {
   await connectDB();
 
-  // 💡 LEAN FIX: Strips heavy hidden Mongoose prototype methods, yielding raw reactive objects
   const sessions = await Session.find({}).sort({ scheduledAt: -1 }).lean();
 
   return (
@@ -54,7 +59,7 @@ export default async function AdminSessionsPage() {
                       <Clock size={14} /> {formatStableTime(session.scheduledAt)}
                     </span>
                     <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold uppercase text-slate-600">
-                      {session.domain}
+                      {session.domain || "Common to All"}
                     </span>
                   </div>
                 </div>
