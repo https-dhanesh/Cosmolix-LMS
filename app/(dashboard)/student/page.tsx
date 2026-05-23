@@ -109,20 +109,10 @@ export default async function StudentDashboard() {
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200/60 shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight font-serif">Welcome Back, {student.name || "Student"}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight font-serif">Welcome, {student.name || "Student"}</h1>
             <p className="text-slate-500 mt-1 text-sm">
-              Current Learning Track: <span className="font-bold text-[#2B5BDB] uppercase tracking-wide">{domain || "Not Assigned"}</span>
+              Learning Track: <span className="font-bold text-[#2B5BDB] uppercase tracking-wide">{domain || "Not Assigned"}</span>
             </p>
-          </div>
-
-          <div className="border border-slate-200/80 p-4 px-6 rounded-2xl flex items-center gap-4 bg-slate-50/50">
-            <div className="bg-blue-50 p-2.5 rounded-xl">
-              <Clock className="text-[#2B5BDB] w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Attendance Rate</p>
-              <p className="text-xl font-black text-slate-900">{attendanceRate}%</p>
-            </div>
           </div>
         </div>
 
