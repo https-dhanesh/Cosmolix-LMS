@@ -4,21 +4,28 @@ import Session from "@/models/Session";
 import AttendanceFilter from "@/app/components/admin/AttendanceFilter";
 import { Users, Clock, CheckCircle2, Search, Calendar } from "lucide-react";
 
-// Helper 1: Extracts DD/MM/YYYY
+export const dynamic = "force-dynamic";
+
 const formatStableDate = (dateInput: any) => {
     if (!dateInput) return "";
     const d = new Date(dateInput);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata'
+    });
 };
 
-// Helper 2: Extracts HH:MM AM/PM
 const formatStableTime = (dateInput: any) => {
     if (!dateInput) return "";
     const d = new Date(dateInput);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata' 
+    });
 };
 
 export default async function AdminAttendancePage({
@@ -40,7 +47,6 @@ export default async function AdminAttendancePage({
 
     return (
         <div className="space-y-8">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -55,7 +61,6 @@ export default async function AdminAttendancePage({
                 </div>
             </div>
 
-            {/* Statistics Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200">
                     <div className="flex items-center gap-3 text-slate-500 mb-2">
@@ -66,7 +71,6 @@ export default async function AdminAttendancePage({
                 </div>
             </div>
 
-            {/* Attendance Table */}
             <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
