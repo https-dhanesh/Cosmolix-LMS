@@ -9,5 +9,9 @@ export default async function Page() {
     redirect("/admin");
   }
 
-  return <SignIn />;
+  return (
+    <SignIn 
+      forceRedirectUrl="/admin" 
+    />
+  );
 }
