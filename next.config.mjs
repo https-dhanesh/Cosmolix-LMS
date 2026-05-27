@@ -1,13 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/__clerk/:path*',
-        destination: 'https://api.clerk.com/__clerk/:path*',
-      },
-    ];
-  },
+  /* No more rewrites block needed! */
 };
 
 export default nextConfig;
