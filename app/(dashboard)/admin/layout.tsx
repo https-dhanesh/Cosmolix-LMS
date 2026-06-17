@@ -80,6 +80,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             label="Live Sessions" 
             active={pathname === "/admin/sessions"}
           />
+
+          <SidebarLink 
+            href="/admin/lectures" 
+            icon={<Video size={20} />} 
+            label="Recorded Lectures" 
+            active={pathname === "/admin/lectures"}
+          />
+          
           <SidebarLink 
             href="/admin/assignments" 
             icon={<FileText size={20} />} 
