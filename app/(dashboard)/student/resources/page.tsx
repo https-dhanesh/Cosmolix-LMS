@@ -9,7 +9,6 @@ export default async function ResourcesPage() {
 
   await connectDB();
 
-  // Fetch completed sessions to show recordings
   const recordings = await Session.find({ 
     domain: domain, 
     status: "completed" 

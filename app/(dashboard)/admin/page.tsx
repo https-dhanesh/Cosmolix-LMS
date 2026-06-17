@@ -3,9 +3,10 @@ import Tenant from "@/models/Tenant";
 import User from "@/models/User";
 import Session from "@/models/Session"; 
 import Assignment from "@/models/Assignment"; 
-import { School, Users, Activity, BarChart3, FileText } from "lucide-react";
+import Lecture from "@/models/Lecture";
+import { School, Users, Activity, BarChart3, FileText, Video, Plus } from "lucide-react";
+import Link from "next/link"; 
 
-// 💡 CRITICAL PRODUCTION FIX: Forces dynamic server execution and bypasses Vercel compilation build caches
 export const dynamic = "force-dynamic";
 
 const STYLES = `
@@ -15,10 +16,14 @@ const STYLES = `
   }
   #admin-dash-root .gt { background: var(--g); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   #admin-dash-root .dash-container { font-family: var(--fb); }
-  #admin-dash-root .cards-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #E2E8F0; border: 1px solid #E2E8F0; border-radius: 24px; overflow: hidden; }
-  @media(max-width: 1024px) { #admin-dash-root .cards-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media(max-width: 640px) { #admin-dash-root .cards-grid { grid-template-columns: 1fr; } }
-  #admin-dash-root .sc-card { background:#fff; padding: 2rem; position: relative; transition: all 0.2s; }
+  
+  /* 3. UPDATED TO REPEAT 5 COLUMNS FOR THE NEW STAT CARD */
+  #admin-dash-root .cards-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: #E2E8F0; border: 1px solid #E2E8F0; border-radius: 24px; overflow: hidden; }
+  @media(max-width: 1200px) { #admin-dash-root .cards-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media(max-width: 768px) { #admin-dash-root .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media(max-width: 480px) { #admin-dash-root .cards-grid { grid-template-columns: 1fr; } }
+
+  #admin-dash-root .sc-card { background:#fff; padding: 2rem; position: relative; transition: all 0.2s; display: block; height: 100%; }
   #admin-dash-root .sc-card:hover { background: #F8FAFF; }
   #admin-dash-root .sc-value { font-family: var(--fd); font-size: 3rem; font-weight: 700; color: #111418; line-height: 1; margin-top: 0.5rem; }
   #admin-dash-root .empty-state { background: #fff; border: 1px solid #E2E8F0; border-radius: 32px; padding: 5rem 2rem; text-align: center; }
@@ -27,16 +32,16 @@ const STYLES = `
 export default async function AdminDashboard() {
   await connectDB();
   
-  // Real-time metrics counts pulling directly from multi-model data states
-  const [collegeCount, studentCount, teacherCount, sessionCount, assignmentCount] = await Promise.all([
+  const [collegeCount, studentCount, teacherCount, sessionCount, assignmentCount, lectureCount] = await Promise.all([
     Tenant.countDocuments({ isDeleted: { $ne: true } }),
     User.countDocuments({ role: "student", isDeleted: { $ne: true } }),
     User.countDocuments({ role: "teacher", isDeleted: { $ne: true } }),
     Session.countDocuments({ status: { $ne: 'completed' } }), 
-    Assignment.countDocuments({ isActive: true })
+    Assignment.countDocuments({ isActive: true }),
+    Lecture.countDocuments({}) // Catch total uploaded recordings
   ]);
 
-  const hasData = sessionCount > 0 || assignmentCount > 0;
+  const hasData = sessionCount > 0 || assignmentCount > 0 || lectureCount > 0;
 
   return (
     <div id="admin-dash-root">
@@ -45,7 +50,7 @@ export default async function AdminDashboard() {
       
       <div className="dash-container">
         {/* Header */}
-        <div className="mb-12 flex justify-between items-end">
+        <div className="mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
             <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 font-mono">Platform Control · Master Overview</p>
             <h1 className="text-4xl font-bold text-slate-900 font-serif">
@@ -53,6 +58,14 @@ export default async function AdminDashboard() {
             </h1>
             <p className="text-slate-500 mt-2 font-light">Real-time visibility across all colleges and domain tracks.</p>
           </div>
+
+          <Link 
+            href="/admin/lectures" 
+            className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl tracking-wide transition-all shadow-sm"
+          >
+            <Video size={14} className="text-red-400" />
+            Manage Lectures
+          </Link>
         </div>
 
         {/* Stat Grid */}
@@ -85,6 +98,21 @@ export default async function AdminDashboard() {
             iconClass="bg-purple-50 text-purple-600"
             trend="Published Tasks"
           />
+          {/* 6. INTEGRATED INTERACTIVE LECTURE METRIC CARD */}
+          <Link href="/admin/lectures">
+            <div className="sc-card border-l border-slate-100">
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-3 rounded-xl bg-red-50 text-red-600">
+                  <Video size={22} />
+                </div>
+                <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider hover:text-blue-600 flex items-center gap-0.5">
+                  Open Sub-Route <Plus size={8} />
+                </span>
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">Recorded Lectures</p>
+              <p className="sc-value">{lectureCount}</p>
+            </div>
+          </Link>
         </div>
 
         {/* Dashboard Content Toggle */}
@@ -111,6 +139,10 @@ export default async function AdminDashboard() {
                   <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                     <span className="text-sm text-slate-700 font-medium">Tracking {studentCount} students across active training paths.</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-sm text-slate-700 font-medium">Broadcasted {lectureCount} distinct architectural lectures.</span>
                   </div>
                </div>
             </div>
