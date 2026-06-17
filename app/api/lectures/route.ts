@@ -51,3 +51,27 @@ export async function GET(req: Request) {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { sessionClaims } = await auth();
+    const role = sessionClaims?.metadata?.role;
+
+    if (role !== "cosmolix_admin") {
+      return new NextResponse("Unauthorized. Admin access required.", { status: 403 });
+    }
+
+    await connectDB();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return new NextResponse("Lecture ID parameter is required", { status: 400 });
+    }
+
+    await Lecture.findByIdAndDelete(id);
+    return NextResponse.json({ message: "Lecture deleted successfully" }, { status: 200 });
+  } catch (error) {
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+}
