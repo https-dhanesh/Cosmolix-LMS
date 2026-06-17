@@ -5,10 +5,11 @@ import Assignment from "@/models/Assignment";
 import Submission from "@/models/Submission";
 import Attendance from "@/models/Attendance";
 import User from "@/models/User";
+import Lecture from "@/models/Lecture"; // 1. IMPORT LECTURE MODEL
 import SessionCard from "@/app/components/dashboard/SessionCard";
 import AssignmentList from "@/app/components/dashboard/AssignmentList";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
-import { LayoutDashboard, Clock, LogOut, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Clock, LogOut, GraduationCap, Video, ExternalLink } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -43,42 +44,33 @@ export default async function StudentDashboard() {
     );
   }
 
-  const rawSessions = await Session.find({
-    status: { $ne: 'completed' },
-    $or: [
-      { domain: domain }, 
-      { domain: null }
-    ],
-    $and: [
-      {
-        $or: [
-          { tenantId: student.tenantId },
-          { tenantId: null }
-        ]
-      }
-    ]
-  }).sort({ scheduledAt: 1 }).lean();
+  // 2. PARALLEL AGGREGATION: Match the exact domain list strings OR global items
+  const [rawSessions, assignments, submissions, lectures] = await Promise.all([
+    Session.find({
+      status: { $ne: 'completed' },
+      $or: [{ domain: domain }, { domain: null }],
+      tenantId: student.tenantId ? student.tenantId : null
+    }).sort({ scheduledAt: 1 }).lean(),
+    
+    Assignment.find({ 
+      $or: [{ domain: domain }, { domain: null }]
+    }).sort({ dueDate: 1 }).lean(),
+    
+    Submission.find({ studentId: student._id }).select('assignmentId').lean(),
+    
+    Lecture.find({
+      $or: [{ domain: domain }, { domain: "GLOBAL_COMMON" }]
+    }).sort({ sessionDate: -1 }).lean()
+  ]);
 
-  // 💡 TIME ENGINE FIX: Calculate if the current time has bypassed the session start window
   const now = new Date();
   const sessions = rawSessions.map((session: any) => {
     const sessionTime = new Date(session.scheduledAt);
     return {
       ...session,
-      // Forces true if status is manually set to live OR if the current time has crossed the scheduled timestamp
       isLive: session.status === 'live' || now >= sessionTime
     };
   });
-
-  const assignments = await Assignment.find({ 
-    $or: [
-      { domain: domain },
-      { domain: null }
-    ]
-  }).sort({ dueDate: 1 }).lean();
-
-  const submissions = await Submission.find({ studentId: student._id }).select('assignmentId').lean();
-  const attendanceRate = await getAttendanceRate(student._id.toString(), domain);
 
   return (
     <div className="min-h-screen bg-[#F4F6FA] pb-12">
@@ -116,37 +108,105 @@ export default async function StudentDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-                <LayoutDashboard className="w-4 h-4 text-slate-600" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-800">Learning Schedule</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {sessions.length > 0 ? (
-                sessions.map((session: any) => (
-                  <SessionCard 
-                    key={session._id.toString()} 
-                    // 💡 Pass down the sanitized serialization object along with our runtime status calculation
-                    session={JSON.parse(JSON.stringify(session))} 
-                  />
-                ))
-              ) : (
-                <div className="col-span-full p-16 text-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-white">
-                  <p className="text-slate-400 font-medium">No live lectures or upcoming sessions found for your track.</p>
+        {/* Outer Flex/Grid Layout Frame */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+          
+          {/* Main Container Work Area (Takes 2 Columns) */}
+          <div className="lg:col-span-2 space-y-12">
+            
+            {/* Learning Schedule Segment */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                  <LayoutDashboard className="w-4 h-4 text-slate-600" />
                 </div>
-              )}
+                <h2 className="text-xl font-bold text-slate-800">Learning Schedule</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {sessions.length > 0 ? (
+                  sessions.map((session: any) => (
+                    <SessionCard 
+                      key={session._id.toString()} 
+                      session={JSON.parse(JSON.stringify(session))} 
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full p-12 text-center border border-dashed border-slate-200 rounded-3xl bg-white">
+                    <p className="text-sm text-slate-400 font-medium">No live lectures or upcoming sessions found for your track.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 3. NEW ADDITION: Recorded Lectures Feed Module */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                  <Video className="w-4 h-4 text-red-500" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">Recorded Sessions</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {lectures.length > 0 ? (
+                  lectures.map((lecture: any) => (
+                    <div 
+                      key={lecture._id.toString()} 
+                      className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[140px]"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider max-w-[150px] truncate">
+                            {lecture.domain === "GLOBAL_COMMON" ? "Global" : lecture.domain}
+                          </span>
+                          <span className="text-xs text-slate-400 font-medium flex items-center gap-1 shrink-0">
+                            <Clock size={12} />
+                            {new Date(lecture.sessionDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-800 line-clamp-2 leading-snug">
+                          {lecture.name}
+                        </h3>
+                      </div>
+                      
+                      <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 font-light">Class Recording Available</span>
+                        <a 
+                          href={lecture.youtubeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 transition-all"
+                        >
+                          Watch Video <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full p-12 text-center border border-dashed border-slate-200 rounded-3xl bg-white">
+                    <p className="text-sm text-slate-400 font-medium">No recorded modules posted for this track yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* 4. DESIGN ENGINE FIX: Sticky Scroll Block for Assignments Column */}
+          <div className="sticky top-28 bg-slate-50/40 p-1 rounded-[2.5rem] border border-slate-100 max-h-[calc(100vh-140px)] flex flex-col">
+            <div className="bg-white p-6 rounded-[2.3rem] shadow-sm overflow-y-auto custom-scrollbar flex-1 space-y-4">
+              <AssignmentList 
+                assignments={JSON.parse(JSON.stringify(assignments))} 
+                submissions={JSON.parse(JSON.stringify(submissions))} 
+              />
             </div>
           </div>
 
-          <div className="bg-slate-50/40 p-1 rounded-[2.5rem] border border-slate-100 h-fit">
-            <div className="bg-white p-6 rounded-[2.3rem] shadow-sm">
-              <AssignmentList assignments={JSON.parse(JSON.stringify(assignments))} submissions={JSON.parse(JSON.stringify(submissions))} />
-            </div>
-          </div>
         </div>
 
       </main>
