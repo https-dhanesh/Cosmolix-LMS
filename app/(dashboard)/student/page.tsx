@@ -5,7 +5,7 @@ import Assignment from "@/models/Assignment";
 import Submission from "@/models/Submission";
 import Attendance from "@/models/Attendance";
 import User from "@/models/User";
-import Lecture from "@/models/Lecture"; // 1. IMPORT LECTURE MODEL
+import Lecture from "@/models/Lecture"; // Import Lecture model
 import SessionCard from "@/app/components/dashboard/SessionCard";
 import AssignmentList from "@/app/components/dashboard/AssignmentList";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
@@ -44,12 +44,19 @@ export default async function StudentDashboard() {
     );
   }
 
-  // 2. PARALLEL AGGREGATION: Match the exact domain list strings OR global items
+  // Fetch all core parameters in parallel 
   const [rawSessions, assignments, submissions, lectures] = await Promise.all([
     Session.find({
       status: { $ne: 'completed' },
       $or: [{ domain: domain }, { domain: null }],
-      tenantId: student.tenantId ? student.tenantId : null
+      $and: [
+        {
+          $or: [
+            { tenantId: student.tenantId },
+            { tenantId: null }
+          ]
+        }
+      ]
     }).sort({ scheduledAt: 1 }).lean(),
     
     Assignment.find({ 
@@ -71,6 +78,8 @@ export default async function StudentDashboard() {
       isLive: session.status === 'live' || now >= sessionTime
     };
   });
+
+  const attendanceRate = await getAttendanceRate(student._id.toString(), domain);
 
   return (
     <div className="min-h-screen bg-[#F4F6FA] pb-12">
@@ -108,13 +117,13 @@ export default async function StudentDashboard() {
           </div>
         </div>
 
-        {/* Outer Flex/Grid Layout Frame */}
+        {/* Master Column Framework Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
           
-          {/* Main Container Work Area (Takes 2 Columns) */}
+          {/* Main Layout Area (Left Stack - 2 Columns wide) */}
           <div className="lg:col-span-2 space-y-12">
             
-            {/* Learning Schedule Segment */}
+            {/* Component Section A: Learning Schedule */}
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
@@ -132,14 +141,14 @@ export default async function StudentDashboard() {
                     />
                   ))
                 ) : (
-                  <div className="col-span-full p-12 text-center border border-dashed border-slate-200 rounded-3xl bg-white">
-                    <p className="text-sm text-slate-400 font-medium">No live lectures or upcoming sessions found for your track.</p>
+                  <div className="col-span-full p-16 text-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-white">
+                    <p className="text-slate-400 font-medium">No live lectures or upcoming sessions found for your track.</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 3. NEW ADDITION: Recorded Lectures Feed Module */}
+            {/* Component Section B: Domain Specific Recorded Lectures */}
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
@@ -157,7 +166,7 @@ export default async function StudentDashboard() {
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider max-w-[150px] truncate">
+                          <span className="text-[9px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider max-w-[170px] truncate">
                             {lecture.domain === "GLOBAL_COMMON" ? "Global" : lecture.domain}
                           </span>
                           <span className="text-xs text-slate-400 font-medium flex items-center gap-1 shrink-0">
@@ -197,9 +206,10 @@ export default async function StudentDashboard() {
 
           </div>
 
-          {/* 4. DESIGN ENGINE FIX: Sticky Scroll Block for Assignments Column */}
-          <div className="sticky top-28 bg-slate-50/40 p-1 rounded-[2.5rem] border border-slate-100 max-h-[calc(100vh-140px)] flex flex-col">
-            <div className="bg-white p-6 rounded-[2.3rem] shadow-sm overflow-y-auto custom-scrollbar flex-1 space-y-4">
+          {/* Right Column Layout Panel: Assignments Workspace Feed */}
+          {/* Fixed max height containment and overflow scroll properties without obstructing inner card click pointer actions */}
+          <div className="lg:sticky lg:top-28 w-full">
+            <div className="bg-white p-6 rounded-[2.3rem] border border-slate-200/60 shadow-sm max-h-[calc(100vh-160px)] overflow-y-auto space-y-4">
               <AssignmentList 
                 assignments={JSON.parse(JSON.stringify(assignments))} 
                 submissions={JSON.parse(JSON.stringify(submissions))} 
